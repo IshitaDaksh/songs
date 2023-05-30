@@ -1,3 +1,2 @@
 spotipy==2.23.0
 streamlit==1.22.0
-ipython @ file:///C:/ci/ipython_1617121002983/work
