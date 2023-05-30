@@ -1,6 +1,8 @@
 import streamlit as st
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+from IPython.display import Audio
+import random
 
 # Spotify API credentials - Replace with your own credentials
 CLIENT_ID = '51babcfa1b8549449d3de94ac58bf158'
@@ -11,58 +13,94 @@ client_credentials_manager = SpotifyClientCredentials(client_id=CLIENT_ID, clien
 spotify = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
 
-def search_songs(query, max_results=5):
+def get_song_recommendations(seed_song_id):
     try:
-        # Search for songs with the given query
-        results = spotify.search(q=query, type='track', limit=max_results)
-        songs = results['tracks']['items']
+        # Get audio features of the seed song
+        seed_song = spotify.track(seed_song_id)
+        seed_song_features = spotify.audio_features([seed_song_id])
 
-        # Extract song details
-        song_info = []
-        for song in songs:
-            info = {
-                'title': song['name'],
-                'artist': song['artists'][0]['name'],
-                'preview_url': song['preview_url']
-            }
-            song_info.append(info)
+        if seed_song_features:
+            seed_song_features = seed_song_features[0]
 
-        return song_info
+            # Extract relevant features
+            seed_features = [
+                seed_song_features['acousticness'],
+                seed_song_features['danceability'],
+                seed_song_features['energy']
+            ]
+
+            # Get recommendations based on seed features
+            recommendations = spotify.recommendations(seed_tracks=[seed_song_id], seed_genres=[],
+                                                      seed_artists=[], limit=50,
+                                                      target_acousticness=seed_features[0],
+                                                      target_danceability=seed_features[1],
+                                                      target_energy=seed_features[2])
+
+            recommended_songs = []
+            for track in recommendations['tracks']:
+                recommended_songs.append({
+                    'title': track['name'],
+                    'artist': track['artists'][0]['name'],
+                    'preview_url': track['preview_url']
+                })
+
+            return recommended_songs
+
+        else:
+            return None
 
     except spotipy.SpotifyException as e:
-        st.error(f'An error occurred: {e}')
+        print(f'An error occurred: {e}')
 
 
 # Streamlit app
-def main():
-    st.title('Song Recommendations')
-    st.write('Welcome! This app recommends songs based on different categories.')
+st.title("Song Recommendation System")
 
-    # Predefined categories
-    categories = {
-        'Motivational': 'motivational',
-        'Happy': 'happy',
-        'Dance': 'dance',
-        'Country Music': 'country',
-        'Romantic': 'romantic',
-        'Self Love': 'self love'
-    }
-
-    # Recommendation selection
-    selected_category = st.selectbox('Select a category', list(categories.keys()))
-
-    # Show songs button
-    if st.button('Show Songs'):
-        # Search songs
-        songs = search_songs(categories[selected_category])
-        if songs:
-            for song in songs:
-                st.write(f'{song["title"]} - {song["artist"]}')
-                st.audio(song["preview_url"])
-        else:
-            st.warning('No songs found.')
+# Input seed song ID
+list1 = [1, 2, 3, 4, 5, 6,7]
+n=random.choice(list1)
 
 
+
+    # t= st.selectbox(
+    # "Type or select a movie from the dropdown",
+    # ("Motivational","RomCom","Comedy","Action","Happy","Optimistic"))
+Motivational= "2J2Z1SkXYghSajLibnQHOa"
+Optimistic= "1nInOsHbtotAmEOQhtvnzP"
+Happy= "6KgBpzTuTRPebChN0VTyzV"
+Dance="0cqRj7pUJDkTCEsJkx8snD"
+Refreshing="6SqDyr9nscxtz48GJHOXiR"
+Sweet="7xbXQeepclfQNqI3mLPb3c"
+Selflove= "42ydLwx4i5V49RXHOozJZq"
+if n==1:
+    seed_song_id= Happy
+elif n==2:
+    seed_song_id= Dance
+elif n==3:
+    seed_song_id= Optimistic
+elif n == 4:
+    seed_song_id = Refreshing
+elif n==5:
+    seed_song_id= Sweet
+elif n==6:
+    seed_song_id= Selflove
+elif n==7:
+    seed_song_id= Motivational
+
+
+
+# Get recommendations when button is clicked
+if st.button("Get Recommendations"):
+    recommended_songs = get_song_recommendations(seed_song_id)
+    if recommended_songs:
+        for song in recommended_songs:
+            st.write(f'{song["title"]} - {song["artist"]}')
+            if song["preview_url"]:
+                st.audio(song["preview_url"], format="audio/mp3")
+            else:
+                st.write("No preview available for this song.")
+    else:
+        st.write('No recommendations found.')
 if __name__ == '__main__':
     def add_bg_from_url():
         st.markdown(
@@ -80,4 +118,3 @@ if __name__ == '__main__':
 
 
     add_bg_from_url()
-    main()
